@@ -67,24 +67,23 @@ contract CryptoPal is SafeMath {
     function checkFriendBalance(address friend)                   public constant returns(uint amount) {
         return balances[friend];
     } 
-    function depositAmount     (uint    amount)                   public          returns(bool confirmation) {
-        //balances[msg.sender] = balances[msg.sender] + amount;
-        balances[msg.sender] = safeAdd(balances[msg.sender], amount);
+    function depositAmount     ()                                 public payable  returns(bool confirmation) {
+        balances[msg.sender] = safeAdd(balances[msg.sender], msg.value);
+        Deposit(0, msg.sender, msg.value, balances[msg.sender]);
         return true;
     }
     function withdrawAmount    (uint    amount)                   public          returns(bool confirmation) {
         if (balances[msg.sender]>=amount) {
-            //balances[msg.sender] = balances[msg.sender] - amount;
             balances[msg.sender] = safeSub(balances[msg.sender], amount);
+            assert(!msg.sender.call.value(amount)());
+            Withdraw(0, msg.sender, amount, balances[msg.sender]);
             return true;
         }
         return false;
     }
     function sendMoney         (uint    amount, address toAdress) public          returns(bool confirmation) {
         if (balances[msg.sender] >= amount) {
-            //balances[msg.sender] = balances[msg.sender] - amount;
             balances[msg.sender] = safeSub(balances[msg.sender], amount);
-            //balances[toAdress] = balances[toAdress] + amount;
             balances[toAdress] = safeAdd(balances[toAdress], amount);
             return true;
         }
@@ -99,23 +98,23 @@ contract CryptoPal is SafeMath {
         return multiCoinBalances[friend][coin];
     }
     function depositAmountMultiCoin     (uint    amount, string coin)                   public          returns(bool confirmation) {
-        //multiCoinBalances[msg.sender][coin] = multiCoinBalances[msg.sender][coin] + amount;
+        assert(!Token(token).transferFrom(msg.sender, this, amount));
         multiCoinBalances[msg.sender][coin] = safeAdd(multiCoinBalances[msg.sender][coin], amount);
+        Deposit(token, msg.sender, amount, tokens[token][msg.sender]);
         return true;
     }
     function withdrawAmountMultiCoin    (uint    amount, string coin)                   public          returns(bool confirmation) {
         if (multiCoinBalances[msg.sender][coin] >= amount) {
-            //multiCoinBalances[msg.sender][coin] = multiCoinBalances[msg.sender][coin] - amount;
             multiCoinBalances[msg.sender][coin] = safeSub(multiCoinBalances[msg.sender][coin], amount);
+            assert(!Token(token).transfer(msg.sender, amount));
+            Withdraw(token, msg.sender, amount, tokens[token][msg.sender]);
             return true;
         }
         return false;
     }
     function sendMoneyMultiCoin         (uint    amount, address toAdress, string coin) public          returns(bool confirmation) {
         if (multiCoinBalances[msg.sender][coin] >= amount) {
-            //multiCoinBalances[msg.sender][coin] = multiCoinBalances[msg.sender][coin] - amount;
             multiCoinBalances[msg.sender][coin] = safeSub(multiCoinBalances[msg.sender][coin], amount);
-            //multiCoinBalances[toAdress]  [coin] = multiCoinBalances[toAdress]  [coin] + amount;
             multiCoinBalances[toAdress]  [coin] = safeAdd(multiCoinBalances[toAdress]  [coin], amount);
             return true;
         }
